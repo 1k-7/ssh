@@ -1,10 +1,20 @@
 FROM ubuntu:latest
 
-# Install standard utilities and ttyd
-RUN apt-get update && apt-get install -y ttyd nano curl wget python3
+# Install OpenSSH, Python, and wget
+RUN apt-get update && apt-get install -y openssh-server python3 wget nano curl
 
-# Expose the standard web port
+# Configure the SSH Server
+RUN mkdir /var/run/sshd
+RUN echo 'root:5KHQGmhugXwXSA' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Download and install the Cloudflare Tunnel daemon
+RUN wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && dpkg -i cloudflared-linux-amd64.deb
+
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+# Expose port 8080 for UptimeRobot
 EXPOSE 8080
 
-# Boot ttyd on port 8080, secure it with a password, and launch bash
-CMD ["ttyd", "-p", "8080", "-c", "krono:5KHQGmhugXwXSA", "bash"]
+CMD ["/start.sh"]
